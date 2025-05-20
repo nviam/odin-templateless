@@ -39,8 +39,8 @@ main :: proc() {
 ## Installation
 Clone or copy the template module into your Odin project directory:
 
-```bash
-git clone https://github.com/yourusername/odin-template.git
+```sh
+git clone https://github.com/nviam/odin-templateless.git
 ````
 
 Or copy `template.odin` into your source tree.
