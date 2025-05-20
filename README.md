@@ -27,8 +27,11 @@ main :: proc() {
         "name":  "Alice",
         "place": "Odinland",
     }
+    defer delete(values)
 
     result := template.template(fmt, values)
+    defer delete(result)
+
     fmt.println(result) // Output: Hello, Alice! Welcome to Odinland.
 }
 ```
@@ -71,3 +74,4 @@ Keys must exactly match the strings in the dictionary.
 ## Contributing
 
 Contributions are welcome! Feel free to submit issues or pull requests.
+For every issue please add a test
