@@ -1,3 +1,4 @@
+#+private
 package template
 
 import "core:testing"
@@ -96,4 +97,11 @@ test13 :: proc(t: ^testing.T){
 	tmp := template(fmt,{})
 	defer delete(tmp)
 	testing.expect(t, tmp==" ", tmp)
+}
+@(test)
+test14 :: proc(t: ^testing.T){
+	fmt := "{{{}}}"
+	tmp := template(fmt,{})
+	defer delete(tmp)
+	testing.expect(t, tmp=="}", tmp)
 }
