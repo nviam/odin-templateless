@@ -1,3 +1,4 @@
+#+feature dynamic-literals
 #+private
 package template
 
