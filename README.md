@@ -1,5 +1,5 @@
-# Templateless
-A lightweight, logicless templating library for the 
+# Mustacheless
+A subset of {{mustache}}, logicless templating library for the 
 [Odin programming language](https://odin-lang.org/).  This library allows you to
 define templates using placeholder variables within strings and replace them 
 with values from a provided dictionary.

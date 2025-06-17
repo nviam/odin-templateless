@@ -1,4 +1,4 @@
-package template
+package mustache
 
 import "core:strings"
 
@@ -20,7 +20,7 @@ A new string with all placeholders replaced by their corresponding values from
 the dictionary. If a key is missing in the dictionary, the placeholder is 
 replaces with an empty string.
 */
-template :: proc(fmt: string, dict: map[string]string ) -> string {
+mustache :: proc(fmt: string, v: any ) -> string {
 	/*
 	template works as a state machine, it manipulates `b` (returned string)
 	and `key` (placeholder string), according to  the states. No error
@@ -52,7 +52,7 @@ template :: proc(fmt: string, dict: map[string]string ) -> string {
 			strings.write_string(&b, "{}" )
 			s=.writing
 		case .close_bracket:
-			strings.write_string(&b, dict[strings.to_string(key)] )
+			strings.write_string(&b, decode(v, strings.to_string(key) ))
 			strings.builder_reset(&key)
 			s=.writing
 		case .writing:
