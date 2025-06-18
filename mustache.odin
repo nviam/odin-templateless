@@ -1,8 +1,8 @@
 package mustache
 
+import "core:log"
 import "core:strings"
 
-@private
 state :: enum {
 	writing,
 	reading_key,
@@ -10,6 +10,7 @@ state :: enum {
 	close_bracket,
 }
 
+mustache :: proc{mustache_reader, mustache_string}
 /*
 Input:
 - fmt: A string with placeholders in the form `{{key}}`.
@@ -20,7 +21,13 @@ A new string with all placeholders replaced by their corresponding values from
 the dictionary. If a key is missing in the dictionary, the placeholder is 
 replaces with an empty string.
 */
-mustache :: proc(fmt: string, v: any ) -> string {
+mustache_string :: proc(fmt: string, v: any ) -> string {
+	r : strings.Reader
+	strings.reader_init(&r, fmt)
+	return  mustache(&r, v, "")
+}
+
+mustache_reader :: proc(r: ^strings.Reader, v: any, end_block: string ) -> string {
 	/*
 	template works as a state machine, it manipulates `b` (returned string)
 	and `key` (placeholder string), according to  the states. No error
@@ -33,49 +40,73 @@ mustache :: proc(fmt: string, v: any ) -> string {
 
 	s:= state.writing
 
-	for c in fmt do switch c {
-	case '{':
-		switch s {
-		case .open_bracket:
-			s=.reading_key
-		case .close_bracket:
-			strings.write_string(&b, "}{" )
-			s=.writing
-		case .writing:
-			s=.open_bracket
-		case .reading_key:
-			strings.write_rune(&key, '{' )
+	for {
+		c, _, err := strings.reader_read_rune(r); 
+
+		if err != nil  {
+			break
 		}
-	case '}':
-		switch s {
-		case .open_bracket:
-			strings.write_string(&b, "{}" )
-			s=.writing
-		case .close_bracket:
-			strings.write_string(&b, decode(v, strings.to_string(key) ))
-			strings.builder_reset(&key)
-			s=.writing
-		case .writing:
-			strings.write_rune(&b, '}' )
-			s=.writing
-		case .reading_key:
-			s=.close_bracket
-		}
-	case:
-		switch s {
-		case .open_bracket:
-			strings.write_rune(&b, '{' )
-			strings.write_rune(&b, c )
-			s=.writing
-		case .close_bracket:
-			strings.write_rune(&key, '}' )
-			strings.write_rune(&key, c )
-			s=.reading_key
-		case .writing:
-			strings.write_rune(&b, c )
-			s=.writing
-		case .reading_key:
-			strings.write_rune(&key, c )
+
+		switch c {
+		case '{':
+			switch s {
+			case .open_bracket:
+				s=.reading_key
+			case .close_bracket:
+				strings.write_string(&b, "}{" )
+				s=.writing
+			case .writing:
+				s=.open_bracket
+			case .reading_key:
+				strings.write_rune(&key, '{' )
+			}
+		case '}':
+			switch s {
+			case .open_bracket:
+				strings.write_string(&b, "{}" )
+				s=.writing
+			case .close_bracket:
+				// Work with key
+				skey := strings.to_string(key)
+				strings.builder_reset(&key)
+				s=.writing
+
+				if len(skey) == 0 {
+					break
+				}
+
+				switch skey[0] {
+				case '/':
+					if skey[1:] == end_block {
+						return strings.to_string(b)
+					}
+				case '#':
+					strings.write_string(&b, preprocess(r, v, skey[1:]) )
+				case:
+					strings.write_string(&b, decode_string(v, skey) )
+				}
+			case .writing:
+				strings.write_rune(&b, '}' )
+				s=.writing
+			case .reading_key:
+				s=.close_bracket
+			}
+		case:
+			switch s {
+			case .open_bracket:
+				strings.write_rune(&b, '{' )
+				strings.write_rune(&b, c )
+				s=.writing
+			case .close_bracket:
+				strings.write_rune(&key, '}' )
+				strings.write_rune(&key, c )
+				s=.reading_key
+			case .writing:
+				strings.write_rune(&b, c )
+				s=.writing
+			case .reading_key:
+				strings.write_rune(&key, c )
+			}
 		}
 	}
 
