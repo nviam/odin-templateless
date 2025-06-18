@@ -3,10 +3,10 @@ package mustache
 import "base:runtime"
 import "core:reflect"
 import "core:strconv"
+import "core:strings"
 import "core:log"
 
 decode :: proc( v: any, key: string ) -> string {
-
 	if v == nil do return ""
 
 	ti := runtime.type_info_base(type_info_of(v.id))
@@ -15,7 +15,13 @@ decode :: proc( v: any, key: string ) -> string {
 	#partial switch info in ti.variant {
 
 	case runtime.Type_Info_Struct:
-		return decode( reflect.struct_field_value_by_name(v, key), "." )
+		newkey, err := strings.split_after_n(key, ".", 2)
+
+		if len(newkey) != 2 || err != nil {
+			return decode( reflect.struct_field_value_by_name(v, key), "." )
+		}
+
+		return decode( reflect.struct_field_value_by_name(v, newkey[0][:len(newkey[0])-1]), newkey[1] )
 
 	case runtime.Type_Info_String:
 		if key != "." do return ""
@@ -42,6 +48,7 @@ decode :: proc( v: any, key: string ) -> string {
 }
 
 
+// Stealed from core:endoding/json
 @(private)
 cast_any_int_to_u128 :: proc(any_int_value: any) -> u128 {
 	u: u128 = 0
